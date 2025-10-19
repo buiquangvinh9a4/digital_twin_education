@@ -24,4 +24,6 @@ models/*.h5
 *.tmp
 # Dữ liệu gốc quá lớn
 data/raw/*.csv
+data/raw/studentVle.csv
+
 
