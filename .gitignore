@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+env/
+.vscode/
+.DS_Store
+
+# Streamlit
+.streamlit/
+
+# Data
+data/processed/*.csv
+!data/processed/test.csv
+!data/processed/ou_real.csv
+!data/processed/ou_pred.csv
+
+# Models
+models/*.h5
+
+# Cache
+*.log
+*.tmp
