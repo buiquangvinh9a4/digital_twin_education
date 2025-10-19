@@ -22,3 +22,6 @@ models/*.h5
 # Cache
 *.log
 *.tmp
+# Dữ liệu gốc quá lớn
+data/raw/*.csv
+
