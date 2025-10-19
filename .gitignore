@@ -1,4 +1,6 @@
-# Python
+# ========================================
+# 🐍 Python environment & cache
+# ========================================
 __pycache__/
 *.pyc
 *.pyo
@@ -7,23 +9,34 @@ env/
 .vscode/
 .DS_Store
 
-# Streamlit
+# ========================================
+# 📊 Streamlit & cache
+# ========================================
 .streamlit/
+*.log
+*.tmp
 
-# Data
-data/processed/*.csv
+# ========================================
+# 📁 Data folders
+# ========================================
+# Bỏ qua toàn bộ dữ liệu xử lý và thô
+data/processed/*
+data/raw/*
+
+# Giữ lại các file kết quả nhỏ cần thiết cho demo
 !data/processed/test.csv
 !data/processed/ou_real.csv
 !data/processed/ou_pred.csv
 
-# Models
-models/*.h5
+# ========================================
+# 🧠 Models
+# ========================================
+models/*
+!models/README.md     # (nếu có mô tả model)
 
-# Cache
-*.log
+# ========================================
+# ⚙️ Others
+# ========================================
+*.bak
 *.tmp
-# Dữ liệu gốc quá lớn
-data/raw/*.csv
-data/raw/studentVle.csv
-
-
+*.swp
