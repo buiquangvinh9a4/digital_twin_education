@@ -26,4 +26,4 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 # Chạy ứng dụng Streamlit
-streamlit run app/Home.py
+streamlit run app/dashboard.py
