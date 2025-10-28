@@ -4,6 +4,15 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import os
+try:
+    from app.utils import read_status, format_mtime
+except ModuleNotFoundError:
+    import sys
+    import os as _os
+    _ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(__file__), "..", ".."))
+    if _ROOT not in sys.path:
+        sys.path.insert(0, _ROOT)
+    from app.utils import read_status, format_mtime
 
 # =============================
 # ⚙️ CẤU HÌNH TRANG
@@ -11,13 +20,20 @@ import os
 st.set_page_config(page_title="Cảnh báo sớm học tập", layout="wide")
 st.title("🚨 Trung tâm cảnh báo sớm — Digital Twin trong giáo dục")
 
+# Live status badge
+status = read_status()
+if status:
+    st.sidebar.success(f"🟢 Live: {status.get('scenario','?')} @ {status.get('timestamp','--')} (test.csv {format_mtime(status.get('test_csv_mtime',0))})")
+else:
+    st.sidebar.warning("⚠️ Live simulator chưa chạy")
+
 TEST_PATH = "data/processed/test.csv"
 PRED_PATH = "data/processed/ou_pred.csv"
 
 # =============================
 # 1️⃣ NẠP DỮ LIỆU
 # =============================
-@st.cache_data
+@st.cache_data(ttl=5)
 def load_data():
     if not os.path.exists(TEST_PATH):
         st.error("❌ Không tìm thấy test.csv. Hãy chạy lại ETL.")

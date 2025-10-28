@@ -5,6 +5,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 import os, csv
+from app.utils import read_status, format_mtime
 from tensorflow.keras.models import load_model
 from scipy.special import expit
 
@@ -13,6 +14,13 @@ from scipy.special import expit
 # =============================
 st.set_page_config(page_title="Digital Twin Sinh viên", layout="wide")
 st.title("🧑‍🎓 Digital Twin Sinh viên — So sánh Thực & Ảo")
+
+# Live status badge
+status = read_status()
+if status:
+    st.sidebar.success(f"🟢 Live: {status.get('scenario','?')} @ {status.get('timestamp','--')} (test.csv {format_mtime(status.get('test_csv_mtime',0))})")
+else:
+    st.sidebar.warning("⚠️ Live simulator chưa chạy")
 
 # =============================
 # 0️⃣ Load mô hình (nếu có)
@@ -31,7 +39,7 @@ else:
 TEST_PATH = "data/processed/test.csv"
 REAL_PATH = "data/processed/ou_real.csv"
 
-@st.cache_data
+@st.cache_data(ttl=5)
 def load_data():
     test = pd.read_csv(TEST_PATH)
     real = pd.read_csv(REAL_PATH) if os.path.exists(REAL_PATH) else pd.DataFrame()
@@ -105,6 +113,32 @@ with colL:
 with colR:
     st.header("🤖 DIGITAL TWIN — Mô phỏng hành vi học tập")
     st.caption("Điều chỉnh các tham số dưới đây để xem mô hình dự đoán thay đổi ra sao:")
+
+    colp1, colp2, colp3, colp4 = st.columns(4)
+    if colp1.button("Preset: 🎯 Exam season"):
+        input_clicks = int(student_real.get("tong_click", 0) * 1.25)
+        input_submits = int(student_real.get("so_bai_nop", 0) + 1)
+        input_avg_score = int(min(100, student_real.get("diem_tb", 0) + 3))
+        input_completion = int(min(100, student_real.get("ti_le_hoan_thanh", 0) * 100 + 5))
+        input_active_weeks = int(min(20, student_real.get("so_tuan_hoat_dong", 0) + 1))
+    if colp2.button("Preset: 🏖️ Holiday"):
+        input_clicks = int(student_real.get("tong_click", 0) * 0.7)
+        input_submits = int(max(0, student_real.get("so_bai_nop", 0) - 1))
+        input_avg_score = int(max(0, student_real.get("diem_tb", 0) - 2))
+        input_completion = int(max(0, student_real.get("ti_le_hoan_thanh", 0) * 100 - 8))
+        input_active_weeks = int(max(0, student_real.get("so_tuan_hoat_dong", 0) - 1))
+    if colp3.button("Preset: 🧑‍🏫 Intervention"):
+        input_clicks = int(student_real.get("tong_click", 0) * 1.15)
+        input_submits = int(student_real.get("so_bai_nop", 0) + 1)
+        input_avg_score = int(min(100, student_real.get("diem_tb", 0) + 2))
+        input_completion = int(min(100, student_real.get("ti_le_hoan_thanh", 0) * 100 + 10))
+        input_active_weeks = int(min(20, student_real.get("so_tuan_hoat_dong", 0) + 1))
+    if colp4.button("Preset: ⚠️ Drop risk"):
+        input_clicks = int(student_real.get("tong_click", 0) * 0.5)
+        input_submits = int(max(0, student_real.get("so_bai_nop", 0) - 2))
+        input_avg_score = int(max(0, student_real.get("diem_tb", 0) - 5))
+        input_completion = int(max(0, student_real.get("ti_le_hoan_thanh", 0) * 100 - 20))
+        input_active_weeks = int(max(0, student_real.get("so_tuan_hoat_dong", 0) - 2))
 
     # ==== Nhập hành vi mô phỏng ====
     input_clicks = st.slider("📚 Tổng lượt truy cập (clicks)", 0, 20000, int(student_real.get("tong_click", 0)))

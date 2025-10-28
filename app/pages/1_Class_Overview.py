@@ -4,6 +4,15 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import os
+try:
+    from app.utils import read_status, format_mtime
+except ModuleNotFoundError:
+    import sys
+    import os as _os
+    _ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(__file__), "..", ".."))
+    if _ROOT not in sys.path:
+        sys.path.insert(0, _ROOT)
+    from app.utils import read_status, format_mtime
 
 # =============================
 # ⚙️ CẤU HÌNH TRANG
@@ -18,7 +27,7 @@ PRED_PATH = "data/processed/ou_pred.csv"
 # =============================
 # 1️⃣ NẠP DỮ LIỆU
 # =============================
-@st.cache_data
+@st.cache_data(ttl=5)
 def load_data():
     if not os.path.exists(TEST_PATH):
         st.error("❌ Không tìm thấy test.csv. Hãy chạy lại ETL.")
@@ -47,6 +56,13 @@ if df.empty:
 # 2️⃣ CẤU HÌNH NGƯỜI DÙNG
 # =============================
 st.sidebar.header("⚙️ Tùy chỉnh hiển thị")
+
+# Live status badge
+status = read_status()
+if status:
+    st.sidebar.success(f"🟢 Live: {status.get('scenario','?')} @ {status.get('timestamp','--')} (test.csv {format_mtime(status.get('test_csv_mtime',0))})")
+else:
+    st.sidebar.warning("⚠️ Live simulator chưa chạy")
 
 metrics_map = {
     "composite_index": "Chỉ số tổng hợp (Learning Index)",
@@ -154,6 +170,7 @@ with colR:
 
 # =============================
 # 6️⃣ BIỂU ĐỒ SO SÁNH CHUNG (ĐIỂM CHUNG)
+# + Confusion-like matrix (nếu có dự đoán)
 # =============================
 st.markdown("---")
 st.subheader(f"📊 So sánh {metrics_map[selected_metric]} giữa Thực tế và Mô phỏng (cùng thang điểm)")
@@ -218,7 +235,19 @@ if show_twin_delta:
     st.plotly_chart(fig_radar, use_container_width=True)
 
 # =============================
-# 8️⃣ GHI CHÚ
+# 8️⃣ CONFUSION-LIKE MATRIX (nếu có label & predicted_label)
+# =============================
+st.markdown("---")
+st.subheader("🧮 Đối chiếu kết quả (Thực vs Dự đoán)")
+if "label" in df.columns and "predicted_label" in df.columns:
+    cm = df.groupby(["label", "predicted_label"]).size().unstack(fill_value=0)
+    cm = cm.rename(index={0:"Thực: Fail",1:"Thực: Pass"}, columns={0:"Dự đoán: Fail",1:"Dự đoán: Pass"})
+    st.dataframe(cm, use_container_width=True)
+else:
+    st.info("Chưa có cột dự đoán để đối chiếu.")
+
+# =============================
+# 9️⃣ GHI CHÚ
 # =============================
 st.caption("""
 💡 Trang này hiển thị song song hai Twin (Thực & Ảo).  
