@@ -42,11 +42,14 @@ def load_data():
     if os.path.exists(PRED_PATH):
         pred = pd.read_csv(PRED_PATH)
         df = df.merge(pred[["id_student", "predicted_label", "prob_pass"]], on="id_student", how="left")
+        # Mode "risk": đảo logic prob_risk = 1 - prob_pass
+        df["prob_risk"] = 1.0 - df["prob_pass"].fillna(0.5)
     else:
         st.warning("⚠️ Chưa có dữ liệu mô phỏng (ou_pred.csv), sẽ chỉ hiển thị phần thực tế.")
         df["predicted_label"] = np.nan
         df["prob_pass"] = np.nan
-
+        df["prob_risk"] = np.nan
+    
     # Bổ sung cột rỗng nếu thiếu
     for c in ["tong_click", "so_bai_nop", "diem_tb", "ti_le_hoan_thanh", "so_tuan_hoat_dong", "label"]:
         if c not in df.columns:
@@ -56,6 +59,22 @@ def load_data():
 df = load_data()
 if df.empty:
     st.stop()
+
+# =============================
+# Đọc ngưỡng động từ metrics_eval.csv
+# =============================
+METRICS_EVAL = "data/simulations/metrics_eval.csv"
+theta_dynamic = 0.94  # default
+if os.path.exists(METRICS_EVAL):
+    try:
+        metrics_df = pd.read_csv(METRICS_EVAL)
+        if not metrics_df.empty and "week" in metrics_df.columns:
+            latest_week = int(metrics_df["week"].max())
+            latest_row = metrics_df[metrics_df["week"] == latest_week].iloc[-1]
+            if "theta_t" in latest_row:
+                theta_dynamic = float(latest_row["theta_t"])
+    except Exception:
+        pass
 
 # =============================
 # 2️⃣ HÀM TÍNH CHỈ SỐ TỔNG HỢP
@@ -85,6 +104,9 @@ completion_factor = st.sidebar.slider("📈 Tăng/Giảm tỷ lệ hoàn thành 
 week_factor = st.sidebar.slider("🗓️ Tăng/Giảm số tuần hoạt động (%)", -50, 50, 0)
 
 threshold = st.sidebar.slider("🚨 Ngưỡng cảnh báo (Learning Index)", 0, 100, 50)
+if theta_dynamic != 0.94:
+    st.sidebar.info(f"🎯 Ngưỡng rủi ro (từ metrics): {theta_dynamic:.2f}")
+risk_threshold = st.sidebar.slider("⚠️ Ngưỡng xác suất rủi ro (prob_risk)", 0.0, 1.0, float(theta_dynamic), 0.01)
 show_download = st.sidebar.checkbox("Hiển thị nút tải danh sách cảnh báo", True)
 
 # Tạo bản sao mô phỏng
@@ -95,11 +117,15 @@ df_sim["diem_tb"] *= (1 + score_factor / 100)
 df_sim["ti_le_hoan_thanh"] *= (1 + completion_factor / 100)
 df_sim["so_tuan_hoat_dong"] *= (1 + week_factor / 100)
 df_sim = compute_learning_index(df_sim)
+# Đảm bảo prob_risk có trong df_sim
+if "prob_risk" not in df_sim.columns and "prob_pass" in df_sim.columns:
+    df_sim["prob_risk"] = 1.0 - df_sim["prob_pass"].fillna(0.5)
 
 # =============================
-# 4️⃣ XÁC ĐỊNH NGUY CƠ TRƯỢT
+# 4️⃣ XÁC ĐỊNH NGUY CƠ TRƯỢT (Mode Risk)
 # =============================
-df_sim["at_risk"] = (df_sim["composite_index"] < threshold) | (df_sim["prob_pass"] < 0.5)
+# Sử dụng prob_risk và ngưỡng động theta_t
+df_sim["at_risk"] = (df_sim["composite_index"] < threshold) | (df_sim["prob_risk"] >= risk_threshold)
 at_risk_students = df_sim[df_sim["at_risk"] == True].copy()
 
 st.subheader("📋 Danh sách sinh viên có nguy cơ trượt học phần")
@@ -110,9 +136,11 @@ else:
     st.error(f"⚠️ Có {len(at_risk_students)} sinh viên đang trong vùng nguy cơ!")
     cols_show = [
         "id_student", "diem_tb", "ti_le_hoan_thanh", "so_bai_nop",
-        "tong_click", "so_tuan_hoat_dong", "composite_index", "prob_pass"
+        "tong_click", "so_tuan_hoat_dong", "composite_index", "prob_risk"
     ]
-    st.dataframe(at_risk_students[cols_show].sort_values("composite_index", ascending=True), use_container_width=True)
+    if "prob_risk" not in at_risk_students.columns:
+        cols_show = [c for c in cols_show if c != "prob_risk"]
+    st.dataframe(at_risk_students[cols_show].sort_values("prob_risk" if "prob_risk" in cols_show else "composite_index", ascending=False), use_container_width=True)
 
     # Nút tải CSV
     if show_download:

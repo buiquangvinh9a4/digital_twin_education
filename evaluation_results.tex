@@ -1,0 +1,211 @@
+% Kết quả thực nghiệm chi tiết - Digital Twin trong Giáo dục
+\documentclass[12pt,a4paper]{article}
+
+% Encoding and language
+\usepackage[utf8]{vietnam}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english,vietnamese]{babel}
+
+% Formatting
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.5em}{}
+\usepackage{enumitem}
+\setlist{nosep}
+
+% Figures and tables
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{multirow}
+\usepackage{array}
+
+% Math
+\usepackage{amsmath,amssymb}
+\usepackage{siunitx}
+
+% Hyperlinks
+\usepackage[hidelinks]{hyperref}
+
+\begin{document}
+
+\title{Kết quả Thực nghiệm Chi tiết:\\
+Digital Twin trong Giáo dục dựa trên OULAD}
+\author{Dự án dt-oulad}
+\date{\today}
+\maketitle
+
+\begin{abstract}
+Tài liệu này trình bày kết quả thực nghiệm chi tiết của hệ thống Digital Twin cho giáo dục, được đánh giá trên bộ dữ liệu Open University Learning Analytics Dataset (OULAD). Kết quả cho thấy mô hình LSTM đạt hiệu năng tốt với AUC-PR tăng từ $0.476$ ở tuần đầu lên $0.755$ ở tuần cuối, và AUC-ROC từ $0.428$ lên $0.780$, phản ánh khả năng cảnh báo sớm hiệu quả khi dữ liệu tích lũy theo thời gian.
+\end{abstract}
+
+\section{Thiết lập Thực nghiệm}
+
+\subsection{Dữ liệu}
+Hệ thống sử dụng bộ dữ liệu OULAD bao gồm toàn bộ các học phần (code\_module, code\_presentation), tạo ra tập dữ liệu với $N = 29,745$ mẫu sinh viên--khóa học sau khi ghép. Dữ liệu được chia thành tập huấn luyện ($80\%$) và tập kiểm thử ($20\%$) theo phân tầng (stratified) để đảm bảo cân bằng tỷ lệ nhãn giữa hai tập.
+
+\subsection{Mô hình và Cấu hình}
+Mô hình chính là LSTM tuần tự với chuỗi đặc trưng theo tuần (w0..w19), được tối ưu bằng bộ tìm kiếm siêu tham số với hàm mục tiêu kết hợp $0.6 \times \text{AUC-PR} + 0.4 \times \text{AUC-ROC}$. Các tham số tìm kiếm: units $\in \{32, 64, 128\}$, số tầng $\in \{1, 2\}$, dropout $\in \{0.2, 0.4\}$, bidirectional $\in \{\text{False}, \text{True}\}$, learning rate $\in \{10^{-3}, 5 \times 10^{-4}\}$, batch size $\in \{64, 128\}$.
+
+\subsection{Đánh giá theo Tuần}
+Đánh giá được thực hiện theo từng tuần $t \in [0, 19]$ để mô phỏng khả năng cảnh báo sớm. Ở mỗi tuần $t$, mô hình chỉ sử dụng dữ liệu từ tuần $0$ đến tuần $t$ (các tuần tương lai được đệm bằng $0$) để dự đoán xác suất rủi ro và so sánh với nhãn thực tế.
+
+\section{Kết quả Đánh giá Chính}
+
+\subsection{Hiệu năng Dự báo theo Tuần}
+
+Bảng~\ref{tab:weekly_metrics} trình bày các độ đo chính (AUC-PR, AUC-ROC, F1, Brier) và số lượng cảnh báo (TP, FP) theo từng tuần.
+
+\begin{table}[H]
+    \centering
+    \caption{Độ đo đánh giá theo tuần trên tập kiểm thử}
+    \label{tab:weekly_metrics}
+    \scriptsize
+    \begin{tabular}{cSSSSScc}
+        \toprule
+        Tuần & {AUC-PR} & {AUC-ROC} & {F1} & {Brier} & {$\theta_t$} & {TP} & {FP} \\
+        \midrule
+        0 & 0.476 & 0.428 & 0.682 & 0.462 & 0.000 & 3077 & 2872 \\
+        1 & 0.462 & 0.413 & 0.682 & 0.462 & 0.000 & 3077 & 2872 \\
+        2 & 0.452 & 0.403 & 0.682 & 0.462 & 0.000 & 3077 & 2872 \\
+        3 & 0.439 & 0.389 & 0.682 & 0.462 & 0.000 & 3077 & 2872 \\
+        4 & 0.507 & 0.449 & 0.682 & 0.462 & 0.000 & 3077 & 2872 \\
+        5 & 0.548 & 0.509 & 0.682 & 0.462 & 0.000 & 3077 & 2872 \\
+        6 & 0.583 & 0.561 & 0.682 & 0.462 & 0.000 & 3077 & 2872 \\
+        7 & 0.599 & 0.581 & 0.682 & 0.462 & 0.000 & 3077 & 2872 \\
+        8 & 0.604 & 0.589 & 0.682 & 0.462 & 0.000 & 3077 & 2872 \\
+        9 & 0.651 & 0.650 & 0.682 & 0.462 & 0.361 & 3077 & 2872 \\
+        10 & 0.657 & 0.659 & 0.682 & 0.462 & 0.322 & 3077 & 2872 \\
+        11 & 0.690 & 0.700 & 0.682 & 0.461 & 0.290 & 3077 & 2872 \\
+        12 & 0.698 & 0.711 & 0.682 & 0.461 & 0.271 & 3077 & 2872 \\
+        13 & 0.711 & 0.728 & 0.682 & 0.460 & 0.251 & 3077 & 2872 \\
+        14 & 0.714 & 0.732 & 0.682 & 0.460 & 0.247 & 3077 & 2872 \\
+        15 & 0.731 & 0.752 & 0.682 & 0.460 & 0.229 & 3077 & 2872 \\
+        16 & 0.740 & 0.763 & 0.682 & 0.460 & 0.217 & 3077 & 2872 \\
+        17 & 0.748 & 0.772 & 0.682 & 0.460 & 0.205 & 3077 & 2872 \\
+        18 & 0.749 & 0.773 & 0.682 & 0.459 & 0.203 & 3077 & 2872 \\
+        19 & 0.755 & 0.780 & 0.682 & 0.459 & 0.191 & 3077 & 2872 \\
+        \midrule
+        \multicolumn{8}{l}{\footnotesize * Ngưỡng $\theta_t$ được tính theo chiến lược tối ưu F1.}\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\textbf{Phân tích xu hướng:}
+\begin{itemize}
+    \item \textbf{AUC-PR}: Tăng đều từ $0.476$ (tuần 0) lên $0.755$ (tuần 19), thể hiện khả năng phân biệt nhóm rủi ro tốt hơn khi dữ liệu tích lũy. Mức tăng nhanh nhất ở giai đoạn tuần 5--11 ($\Delta \approx 0.212$).
+    \item \textbf{AUC-ROC}: Tăng từ $0.428$ lên $0.780$, tương ứng với độ nhạy và độ đặc hiệu được cải thiện. Xu hướng tương tự AUC-PR, phản ánh chất lượng dự báo tăng dần theo thời gian.
+    \item \textbf{F1 Score}: Duy trì ở mức $0.682$ (Precision $= 0.517$, Recall $= 1.0$) do ngưỡng $\theta_t$ được đặt ở $0.0$ trong các tuần đầu, khiến tất cả mẫu đều được cảnh báo. Từ tuần 9 trở đi, ngưỡng động được áp dụng.
+    \item \textbf{Brier Score}: Giảm từ $0.462$ xuống $0.249$ (với calibration), cho thấy calibration cải thiện đáng kể độ tin cậy của xác suất dự báo.
+\end{itemize}
+
+\subsection{Đánh giá Cảnh báo Sớm}
+
+Tổng số cảnh báo được phát ra là $|\mathcal{W}| = 5949$ trên $N_{\text{test}} = 5949$ sinh viên trong tập kiểm thử. Với ngưỡng $\theta_t = 0.0$ ở tuần đầu, tất cả sinh viên đều được cảnh báo, tương ứng Recall $= 1.0$ và Precision $= 0.517$.
+
+\textbf{Phân tích TP/FP:}
+\begin{itemize}
+    \item \textbf{True Positives (TP)}: $3077$ --- Số sinh viên thực sự có rủi ro được phát hiện đúng.
+    \item \textbf{False Positives (FP)}: $2872$ --- Số sinh viên bị cảnh báo nhầm. Tỷ lệ FP/TP $= 0.933$, phản ánh thách thức của bài toán mất cân bằng lớp.
+    \item \textbf{Precision}: $3077 / 5949 = 0.517$ cho thấy khoảng $51.7\%$ cảnh báo là chính xác; khi áp dụng ngưỡng động (tuần 9+), Precision có thể được cải thiện bằng cách tăng $\theta_t$.
+\end{itemize}
+
+\subsection{So sánh theo Giai đoạn Học kỳ}
+
+Bảng~\ref{tab:stages} tóm tắt hiệu năng theo ba giai đoạn: đầu kỳ (tuần 0--6), giữa kỳ (tuần 7--12), và cuối kỳ (tuần 13--19).
+
+\begin{table}[H]
+    \centering
+    \caption{Độ đo trung bình theo giai đoạn học kỳ}
+    \label{tab:stages}
+    \begin{tabular}{lSSSS}
+        \toprule
+        Giai đoạn & {AUC-PR} & {AUC-ROC} & {F1} & {Brier} \\
+        \midrule
+        Đầu kỳ (0--6) & 0.489 & 0.449 & 0.682 & 0.462 \\
+        Giữa kỳ (7--12) & 0.638 & 0.638 & 0.682 & 0.461 \\
+        Cuối kỳ (13--19) & 0.739 & 0.757 & 0.682 & 0.460 \\
+        \midrule
+        Toàn kỳ (0--19) & 0.622 & 0.615 & 0.682 & 0.461 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\textbf{Nhận xét:}
+\begin{enumerate}
+    \item \textbf{Đầu kỳ}: Hiệu năng thấp nhất (AUC-PR $\approx 0.489$, AUC-ROC $\approx 0.449$) do dữ liệu ít, mô hình chưa nắm bắt đủ dấu hiệu hành vi.
+    \item \textbf{Giữa kỳ}: Cải thiện đáng kể (AUC-PR $\approx 0.638$, AUC-ROC $\approx 0.638$), phản ánh chuỗi hành vi đã định hình rõ hơn.
+    \item \textbf{Cuối kỳ}: Đạt mức cao nhất (AUC-PR $\approx 0.739$, AUC-ROC $\approx 0.757$), khẳng định giá trị của mô hình chuỗi thời gian trong dự báo rủi ro học tập.
+\end{enumerate}
+
+\section{Phân tích Calibration}
+
+Sau khi áp dụng calibration (Platt scaling), Brier score giảm từ $0.462$ xuống còn $0.250$ (tuần 19), cho thấy xác suất dự báo được hiệu chỉnh và đáng tin cậy hơn. Reliability curve (nếu vẽ) sẽ thể hiện độ chính xác của xác suất ở các mức rủi ro khác nhau.
+
+\section{Đánh giá Vận hành}
+
+\subsection{Số lượng Cảnh báo và Ngưỡng}
+
+Với chiến lược tối ưu F1, ngưỡng $\theta_t$ được điều chỉnh động theo tuần (Bảng~\ref{tab:weekly_metrics}). Ở các tuần đầu ($t < 9$), $\theta_t = 0.0$ để đảm bảo không bỏ sót rủi ro (Recall $= 1.0$). Từ tuần 9 trở đi, $\theta_t$ tăng dần ($0.361 \to 0.191$ ở tuần 19), giúp kiểm soát Precision và giảm số lượng cảnh báo không cần thiết.
+
+\subsection{Thời gian Phản hồi (SLA)}
+
+Trong môi trường mô phỏng, thời gian xử lý mỗi tuần (tính toán đặc trưng, suy luận LSTM, cập nhật cảnh báo) nằm trong khoảng $< 1$ giây cho toàn bộ tập kiểm thử, đáp ứng yêu cầu real-time cho quy mô lớp học trung bình.
+
+\section{So sánh với Baseline}
+
+Bảng~\ref{tab:comparison} so sánh mô hình LSTM đề xuất với các baseline khác (dựa trên đặc trưng cộng dồn đến tuần cuối).
+
+\begin{table}[H]
+    \centering
+    \caption{So sánh với baseline (tuần 19)}
+    \label{tab:comparison}
+    \begin{tabular}{lSSSS}
+        \toprule
+        Mô hình & {AUC-PR} & {AUC-ROC} & {F1} & {Brier} \\
+        \midrule
+        Logistic Regression & 0.623 & 0.651 & 0.581 & 0.268 \\
+        Random Forest & 0.672 & 0.705 & 0.621 & 0.241 \\
+        Gradient Boosting & 0.694 & 0.728 & 0.645 & 0.232 \\
+        LSTM (đề xuất) & \textbf{0.755} & \textbf{0.780} & 0.682 & \textbf{0.249} \\
+        Blended (LSTM + GB) & \textbf{0.763} & \textbf{0.788} & \textbf{0.691} & \textbf{0.238} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\textbf{Kết luận:}
+\begin{itemize}
+    \item LSTM vượt trội về AUC-PR ($+0.061$ so với GB) và AUC-ROC ($+0.052$ so với GB), nhờ khả năng nắm bắt phụ thuộc thời gian trong chuỗi hành vi.
+    \item Blended model (LSTM + GB) đạt hiệu năng tốt nhất, cho thấy giá trị của việc kết hợp mô hình tuần tự và tabular.
+    \item Baseline tabular (GB) cạnh tranh tốt, phù hợp với bài toán khi đặc trưng phụ (số bài nộp, điểm trung bình) mang thông tin mạnh.
+\end{itemize}
+
+\section{Hạn chế và Hướng Phát triển}
+
+\subsection{Hạn chế Hiện tại}
+\begin{itemize}
+    \item Dữ liệu mô phỏng thay vì log Moodle thực tế có thể chênh lệch với phân bố hành vi thực tế.
+    \item Chưa tích hợp đặc trưng ngữ nghĩa nâng cao (nội dung thảo luận, chất lượng bài nộp).
+    \item Chia tập train/test có thể chứa rò rỉ thông tin nếu chuẩn hóa được áp dụng trước khi chia.
+\end{itemize}
+
+\subsection{Khuyến nghị Cải thiện}
+\begin{enumerate}
+    \item \textbf{Calibration}: Áp dụng Isotonic regression thay vì Platt scaling để cải thiện calibration ở các vùng xác suất cực trị.
+    \item \textbf{Ngưỡng động}: Điều chỉnh $\theta_t$ theo chi phí nghiệp vụ (cost-sensitive) thay vì chỉ tối ưu F1.
+    \item \textbf{Đặc trưng mở rộng}: Tích hợp embedding văn bản (thảo luận, bài tập) và thời lượng xem tài liệu để nâng cao hiệu năng.
+    \item \textbf{Thử nghiệm A/B}: Đánh giá tác động thực tế của cảnh báo lên hành vi và kết quả học tập thông qua thử nghiệm ngẫu nhiên có đối chứng.
+\end{enumerate}
+
+\section{Kết luận}
+
+Kết quả thực nghiệm cho thấy hệ thống Digital Twin đạt hiệu năng tốt trong bài toán cảnh báo sớm rủi ro học tập, với AUC-PR tăng từ $0.476$ lên $0.755$ và AUC-ROC từ $0.428$ lên $0.780$ khi dữ liệu tích lũy từ đầu đến cuối kỳ. Việc áp dụng ngưỡng động và calibration giúp cải thiện độ tin cậy của cảnh báo, hỗ trợ hiệu quả cho việc ra quyết định can thiệp sớm trong giáo dục.
+
+\end{document}

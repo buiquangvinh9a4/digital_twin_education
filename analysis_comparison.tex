@@ -1,0 +1,190 @@
+% Phân tích so sánh kết quả: Mode "pass" vs Mode "risk"
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{vietnam}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english,vietnamese]{babel}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{amsmath}
+\usepackage[hidelinks]{hyperref}
+
+\title{Phân tích So sánh: Mode ``Pass'' vs Mode ``Risk''\\ 
+Đánh giá Mất cân bằng Lớp trong Digital Twin Giáo dục}
+\author{Dự án dt-oulad}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Bài phân tích so sánh hiệu quả của hai phương án xử lý mất cân bằng lớp: (A) giữ nguyên logic dự đoán ``pass'' với điều chỉnh ngưỡng, và (B) đảo logic sang ``risk''. Kết quả cho thấy mode ``risk'' với chiến lược F1 đạt Precision $0.540$ và Recall $0.934$ ở tuần 19, cân bằng tốt hơn so với mode ``pass'' + F1 (Precision $0.517$, Recall $1.0$). Mode ``pass'' + cost-sensitive giảm FP từ $2872$ xuống $190$ nhưng Recall giảm còn $0.256$.
+\end{abstract}
+
+\section{Tóm tắt Kết quả (Tuần 19)}
+
+Bảng~\ref{tab:comparison_summary} so sánh 5 phương án đánh giá ở tuần cuối.
+
+\begin{table}[H]
+\centering
+\caption{So sánh các phương án đánh giá (tuần 19)}
+\label{tab:comparison_summary}
+\small
+\begin{tabular}{lSSSSScc}
+\toprule
+Phương án & {AUC-PR} & {AUC-ROC} & {Precision} & {Recall} & {F1} & {FP} & {TP} \\
+\midrule
+Pass + F1 & 0.755 & 0.780 & 0.517 & 1.000 & 0.682 & 2872 & 3077 \\
+Pass + Cost & 0.755 & 0.780 & \textbf{0.806} & 0.256 & 0.389 & \textbf{190} & 789 \\
+Pass + Prec $\geq$0.75 & 0.755 & 0.780 & 0.806 & 0.256 & 0.389 & 190 & 789 \\
+Risk + F1 & \textbf{0.803} & \textbf{0.780} & 0.540 & \textbf{0.934} & \textbf{0.684} & 2288 & 2682 \\
+Risk + Cost & 0.803 & 0.780 & -- & 0.000 & 0.000 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Phân tích Chi tiết}
+
+\subsection{Phương án A: Mode ``Pass'' (Giữ nguyên Logic)}
+
+\subsubsection{Pass + F1 (Ngưỡng tối ưu F1)}
+\textbf{Đặc điểm}: Ngưỡng $\theta_t = 0.0$ ở tất cả các tuần, dẫn đến cảnh báo toàn bộ sinh viên.
+
+\textbf{Kết quả tuần 19}:
+\begin{itemize}
+    \item Precision: $0.517$ (thấp) --- Chỉ $51.7\%$ cảnh báo là chính xác
+    \item Recall: $1.000$ (tối đa) --- Không bỏ sót rủi ro nào
+    \item FP: $2872$ (cao) --- Quá nhiều cảnh báo sai
+    \item TP: $3077$ --- Phát hiện đúng tất cả sinh viên có rủi ro
+\end{itemize}
+
+\textbf{Đánh giá}: Phù hợp khi mục tiêu là \emph{không bỏ sót} rủi ro, nhưng gây quá tải can thiệp do FP cao.
+
+\subsubsection{Pass + Cost-Sensitive (FP cost = 2.5x)}
+\textbf{Đặc điểm}: Ngưỡng $\theta_t = 0.06$ để phạt nặng FP, giảm số cảnh báo.
+
+\textbf{Kết quả tuần 19}:
+\begin{itemize}
+    \item Precision: $0.806$ (cao) --- $80.6\%$ cảnh báo chính xác
+    \item Recall: $0.256$ (thấp) --- Chỉ phát hiện $25.6\%$ rủi ro
+    \item FP: $190$ (thấp) --- Giảm $92\%$ so với Pass + F1
+    \item TP: $789$ --- Chỉ phát hiện được $789/3077 = 25.6\%$ rủi ro thực
+\end{itemize}
+
+\textbf{Đánh giá}: Giảm đáng kể FP và tăng Precision, nhưng Recall thấp --- bỏ sót $74.4\%$ rủi ro, không phù hợp mục tiêu phát hiện sớm.
+
+\subsubsection{Pass + Precision Floor ($\geq 0.75$)}
+\textbf{Kết quả}: Tương tự Pass + Cost, ngưỡng $\theta_t = 0.06$ để đảm bảo Precision $\geq 0.75$.
+
+\textbf{Đánh giá}: Giống Pass + Cost, cân bằng Precision tốt nhưng Recall thấp.
+
+\subsection{Phương án B: Mode ``Risk'' (Đảo Logic)}
+
+\subsubsection{Risk + F1}
+\textbf{Đặc điểm}: Đảo logic $p_{\text{risk}} = 1 - p_{\text{pass}}$ và $y_{\text{risk}} = 1 - y_{\text{pass}}$, ngưỡng $\theta_t = 0.94$ (cao).
+
+\textbf{Kết quả tuần 19}:
+\begin{itemize}
+    \item AUC-PR: $0.803$ (cao nhất) --- Tăng $6.4\%$ so với Pass + F1
+    \item Precision: $0.540$ --- Cải thiện $4.5\%$ so với Pass + F1
+    \item Recall: $0.934$ --- Vẫn giữ $93.4\%$ phát hiện rủi ro
+    \item FP: $2288$ --- Giảm $20\%$ so với Pass + F1 (2872)
+    \item TP: $2682$ --- Phát hiện $87.2\%$ rủi ro ($2682/3077$)
+    \item F1: $0.684$ --- Cao nhất trong tất cả phương án
+\end{itemize}
+
+\textbf{Đánh giá}: \textbf{Phương án tối ưu} cho mục tiêu phát hiện rủi ro:
+\begin{itemize}
+    \item Cân bằng tốt giữa Precision ($0.540$) và Recall ($0.934$)
+    \item AUC-PR cao nhất ($0.803$), phản ánh khả năng phân biệt rủi ro tốt
+    \item F1 cao nhất ($0.684$)
+    \item Giảm $20\%$ FP so với Pass + F1 mà vẫn giữ $93.4\%$ Recall
+\end{itemize}
+
+\subsubsection{Risk + Cost (FP cost = 2.5x)}
+\textbf{Đặc điểm}: Ngưỡng $\theta_t = 0.95$ (rất cao) để phạt FP nặng.
+
+\textbf{Kết quả tuần 19}: Không có cảnh báo nào (quá bảo thủ).
+
+\textbf{Đánh giá}: Không phù hợp --- ngưỡng quá cao khiến hệ thống không cảnh báo gì, mất hoàn toàn giá trị cảnh báo sớm.
+
+\section{Kết luận và Khuyến nghị}
+
+\subsection{Phương án Tối ưu}
+
+\textbf{Mode ``Risk'' + F1} là phương án tối ưu cho bài toán phát hiện rủi ro:
+
+\begin{enumerate}
+    \item \textbf{Cân bằng tốt nhất}: Precision $0.540$ và Recall $0.934$, đảm bảo không bỏ sót rủi ro đồng thời giảm cảnh báo sai.
+    \item \textbf{AUC-PR cao nhất}: $0.803$ phản ánh khả năng phân biệt rủi ro tốt hơn so với mode ``pass''.
+    \item \textbf{F1 cao nhất}: $0.684$ trong tất cả phương án.
+    \item \textbf{Giảm FP}: Từ $2872$ (Pass + F1) xuống $2288$ ($-20\%$) mà vẫn giữ $93.4\%$ Recall.
+\end{enumerate}
+
+\subsection{So sánh với Mục tiêu Bài toán}
+
+Mục tiêu: \emph{Phát hiện sinh viên có rủi ro cao}, không phải dự đoán đạt học phần.
+
+\begin{itemize}
+    \item \textbf{Mode ``pass''}: Logic đi ngược mục tiêu --- dự đoán ``pass'' rồi suy ra rủi ro gián tiếp.
+    \item \textbf{Mode ``risk''}: Logic phù hợp --- trực tiếp dự đoán xác suất rủi ro, dễ diễn giải và tối ưu ngưỡng.
+\end{itemize}
+
+\subsection{Khuyến nghị Triển khai}
+
+\begin{enumerate}
+    \item \textbf{Sử dụng Mode ``Risk'' + F1} cho hệ thống sản xuất.
+    \item \textbf{Ngưỡng động theo tuần}: Ở tuần đầu ($t < 9$), có thể đặt $\theta_t$ thấp hơn ($0.85--0.90$) để tăng độ nhạy; từ tuần 9 trở đi dùng $\theta_t = 0.94$.
+    \item \textbf{Calibration}: Áp dụng Isotonic regression để cải thiện độ tin cậy xác suất trước khi áp dụng ngưỡng.
+    \item \textbf{Theo dõi FP/TP theo tuần}: Monitor tỷ lệ FP/TP để điều chỉnh ngưỡng động nếu cần.
+\end{enumerate}
+
+\subsection{Hạn chế và Hướng Phát triển}
+
+\begin{itemize}
+    \item \textbf{Recall chưa đạt $100\%$}: Vẫn bỏ sót $6.6\%$ rủi ro ở tuần 19. Có thể điều chỉnh $\theta_t$ xuống $0.92--0.93$ để tăng Recall nếu chấp nhận FP tăng nhẹ.
+    \item \textbf{Precision vẫn còn thấp ($0.540$)}: Chấp nhận được cho cảnh báo sớm (ưu tiên không bỏ sót), nhưng có thể cải thiện bằng cách:
+    \begin{itemize}
+        \item Tăng cường đặc trưng (văn bản, thời lượng xem)
+        \item Ensemble với mô hình tabular (Gradient Boosting)
+        \item Active learning để làm giàu dữ liệu rủi ro
+    \end{itemize}
+    \item \textbf{Đánh giá tác động}: Cần thử nghiệm A/B để đo hiệu quả can thiệp thực tế, không chỉ dựa trên metrics dự báo.
+\end{itemize}
+
+\section{Bảng Chi tiết theo Tuần}
+
+Bảng~\ref{tab:risk_f1_weekly} trình bày diễn tiến của phương án tối ưu (Risk + F1) theo từng tuần.
+
+\begin{table}[H]
+\centering
+\caption{Diễn tiến Risk + F1 theo tuần (mẫu)}
+\label{tab:risk_f1_weekly}
+\scriptsize
+\begin{tabular}{cSSSSScc}
+\toprule
+Tuần & {AUC-PR} & {Precision} & {Recall} & {F1} & {$\theta_t$} & {TP} & {FP} \\
+\midrule
+0 & 0.429 & 0.483 & 1.000 & 0.651 & 0.000 & 2872 & 3077 \\
+5 & 0.464 & 0.483 & 1.000 & 0.651 & 0.000 & 2872 & 3077 \\
+9 & 0.606 & 0.483 & 0.999 & 0.651 & 0.940 & 2870 & 3070 \\
+12 & 0.704 & 0.494 & 0.985 & 0.658 & 0.940 & 2829 & 2893 \\
+15 & 0.766 & 0.514 & 0.959 & 0.670 & 0.940 & 2755 & 2600 \\
+19 & \textbf{0.803} & \textbf{0.540} & \textbf{0.934} & \textbf{0.684} & \textbf{0.940} & \textbf{2682} & \textbf{2288} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Quan sát}:
+\begin{itemize}
+    \item Ngưỡng $\theta_t = 0.940$ được áp dụng từ tuần 9, giảm FP từ $3077$ xuống $3070$.
+    \item AUC-PR tăng đều từ $0.429$ (tuần 0) lên $0.803$ (tuần 19).
+    \item Precision tăng từ $0.483$ lên $0.540$, phản ánh ngưỡng cao giúp lọc bớt FP.
+    \item Recall giảm từ $1.000$ xuống $0.934$, nhưng vẫn giữ được $93.4\%$ --- mức chấp nhận được cho cảnh báo sớm.
+\end{itemize}
+
+\end{document}

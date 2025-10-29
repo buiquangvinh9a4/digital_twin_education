@@ -1,0 +1,258 @@
+% Digital Twin in Education - LaTeX Essay
+\documentclass[12pt,a4paper]{article}
+
+% Encoding and language
+\usepackage[utf8]{vietnam}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english,vietnamese]{babel}
+
+% Formatting
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.5em}{}
+\usepackage{enumitem}
+\setlist{nosep}
+
+% Figures and tables
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+
+% Math and code
+\usepackage{amsmath,amssymb}
+\usepackage{siunitx}
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Hyperlinks
+\usepackage[hidelinks]{hyperref}
+
+% Bibliography (simple)
+\usepackage[numbers]{natbib}
+\bibliographystyle{unsrtnat}
+
+% Custom commands
+\newcommand{\dataset}{OULAD}
+\newcommand{\proj}{dt-oulad}
+
+\begin{document}
+
+% 1. Trang bìa (Title page)
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    {\LARGE \textbf{Digital Twin trong Giáo dục dựa trên OULAD:}\par}
+    \vspace{0.3cm}
+    {\Large \textbf{Cơ sở lý thuyết, Quy trình xây dựng và Thử nghiệm}}
+
+    \vspace{2cm}
+    {\large Dự án: \texttt{\proj}\\}
+    {\large Tổ chức/Nhóm tác giả: [Điền tên]}
+
+    \vfill
+    {\large Ngày: \today}
+\end{titlepage}
+
+% Optional abstract
+\begin{abstract}
+Bài tiểu luận trình bày một hệ thống Digital Twin (DT) cho giáo dục đại học được xây dựng trên bộ dữ liệu công khai Open University Learning Analytics Dataset (OULAD). Chúng tôi tổng hợp cơ sở lý thuyết của DT, học phân tích (Learning Analytics), mô hình chuỗi thời gian (LSTM), và hệ thống cảnh báo sớm; sau đó mô tả quy trình chuẩn từ ETL, huấn luyện mô hình, suy luận, mô phỏng thời gian thực tới bảng điều khiển. Kết quả thử nghiệm cho thấy DT hỗ trợ giám sát tiến độ, phát hiện rủi ro và cung cấp cảnh báo sớm hữu ích. Bài viết thảo luận giới hạn, khuyến nghị triển khai và hướng mở rộng.
+\end{abstract}
+
+% 2. Giới thiệu
+\section{Giới thiệu}
+\subsection{Digital Twin trong giáo dục}
+Digital Twin (DT) là bản sao số động, đồng bộ trạng thái với thực thể vật lý để \emph{quan sát} (sense), \emph{suy luận/dự báo} (think) và \emph{tác động} (act) trong vòng lặp khép kín. Trong giáo dục, thực thể có thể là sinh viên, lớp học, hoặc học phần; DT phản chiếu tiến độ học tập, hành vi tương tác môi trường học trực tuyến (LMS/VLE), và diễn biến rủi ro kết quả. So với hệ báo cáo tĩnh, DT cho phép cập nhật thời gian (gần) thực, mô phỏng kịch bản ``nếu--thì'' và kiểm thử chính sách can thiệp trước khi áp dụng.
+
+\subsection{Học phân tích và cảnh báo sớm}
+Học phân tích (Learning Analytics) khai thác dữ liệu học tập để hỗ trợ ra quyết định sư phạm. Bài toán cốt lõi là cảnh báo sớm nguy cơ trượt (fail/withdraw), nhằm tạo ``cửa sổ can thiệp'' kịp thời. Hai thách thức chính: (i) \textbf{động học theo thời gian} khi dữ liệu tích luỹ theo tuần và (ii) \textbf{mất cân bằng lớp} do tỷ lệ trượt thấp hơn nhiều so với đậu, khiến độ đo như AUC-PR, F1 và calibration trở nên quan trọng.
+
+\subsection{Các nghiên cứu gần đây}
+Các phương pháp truyền thống (logistic regression, cây quyết định, ensemble) hoạt động tốt với đặc trưng tĩnh hoặc cộng dồn. Gần đây, các mô hình tuần tự (RNN/LSTM/GRU, attention/transformer) cho thấy ưu thế khi mô hình hoá phụ thuộc thời gian trong hành vi học tập. Trong khi nhiều công trình dùng \dataset{} để so sánh mô hình dự báo, số nghiên cứu tích hợp trọn vẹn thành hệ DT kèm mô phỏng thời gian thực và dashboard vận hành còn hạn chế.
+
+\subsection{Hạn chế và bài toán giải quyết}
+\textbf{Hạn chế hiện hữu:} (i) báo cáo hậu nghiệm, thiếu cập nhật động; (ii) thiếu mô phỏng và đánh giá chính sách trước triển khai; (iii) độ tin cậy/công bằng (fairness) chưa được theo dõi hệ thống; (iv) thiếu cơ chế diễn giải theo thời gian.\\
+\textbf{Bài toán:} Với mỗi sinh viên $s$ tại tuần $t$, ước lượng $\hat{y}_{s,t}=P(\text{pass}\mid \text{dữ liệu đến tuần }t)$, phát hiện rủi ro sớm, cập nhật DT trực tuyến khi có sự kiện mới, và hỗ trợ mô phỏng can thiệp.
+
+% 3. Quy trình xây dựng
+\section{Cơ sở lý thuyết}
+\subsection{Mô hình chuỗi thời gian và LSTM}
+Cho chuỗi đặc trưng theo tuần $\{\mathbf{x}_1,\dots,\mathbf{x}_T\}$, LSTM duy trì trạng thái ẩn và cổng kiểm soát để ghi nhớ dài hạn, khắc phục tiêu biến gradient. Kiến trúc điển hình: một hoặc hai tầng LSTM, tiếp theo là lớp \texttt{Dense} với hàm kích hoạt sigmoid ước lượng xác suất. Mục tiêu tối ưu là binary cross-entropy, có thể dùng trọng số lớp khi mất cân bằng.
+
+\subsection{Chuẩn hoá, cân bằng và hiệu chỉnh xác suất}
+Chuẩn hoá min--max giúp ổn định huấn luyện; kỹ thuật reweighting/oversampling giảm thiên lệch lớp. Hiệu chỉnh xác suất (Platt/Isotonic) cải thiện calibration, quan trọng khi chuyển đổi xác suất thành cảnh báo dựa ngưỡng.
+
+\subsection{Đánh giá theo thời gian}
+Độ đo AUC-ROC, AUC-PR, F1 theo \emph{tuần} phản ánh khả năng cảnh báo sớm. Brier score kiểm tra calibration. Ngưỡng cảnh báo có thể \emph{động} theo tuần để kiểm soát tỷ lệ dương tính giả.
+
+\subsection{Khung Digital Twin}
+DT gồm: (i) \textbf{Sense} -- thu nhận và tổng hợp dữ liệu tương tác VLE; (ii) \textbf{Think} -- suy luận tuần tự, cập nhật xác suất rủi ro; (iii) \textbf{Act} -- kích hoạt cảnh báo, đề xuất can thiệp, và mô phỏng phảnf hồi. Dashboard là giao diện điều hành vòng lặp.
+
+\section{Quy trình xây dựng}
+\subsection{Tổng quan hệ thống}
+Kho mã dự án \texttt{\proj} tổ chức theo 4 lớp: dữ liệu/ETL, mô hình dự đoán, mô phỏng thời gian thực, và dashboard. Luồng: Raw $\rightarrow$ ETL $\rightarrow$ Train $\rightarrow$ Predict $\rightarrow$ Simulate/Update $\rightarrow$ Dashboard.
+
+\subsection{ETL và đặc trưng hoá}
+Nguồn dữ liệu tại \texttt{data/raw/} (assessments, courses, studentInfo, studentRegistration, studentVle, vle). Kịch bản \texttt{scripts/etl\_prepare.py} tổng hợp thành \texttt{data/processed/} gồm \texttt{train.csv}, \texttt{test.csv}, \texttt{ou\_real.csv}, \texttt{ou\_pred.csv}, và \texttt{scaler\_minmax.csv}. Đặc trưng theo tuần gồm tổng click, số ngày hoạt động, tiến độ bài tập; chuỗi được đệm/mặt nạ để tạo tensor đầu vào LSTM kích thước [batch, time, features].
+
+\subsection{Huấn luyện mô hình}
+Kịch bản \texttt{scripts/train\_lstm.py} huấn luyện và lưu mô hình tại \texttt{models/*.h5} (\texttt{lstm\_best.h5}, \texttt{oulad\_lstm.h5}). Hàm mất mát: binary cross-entropy; theo dõi AUC-ROC, AUC-PR, F1; dừng sớm theo tập xác thực. Có thể áp dụng hiệu chỉnh xác suất sau huấn luyện.
+
+\subsection{Suy luận và cảnh báo}
+Dự báo batch tạo \texttt{ou\_pred.csv} liên kết với \texttt{ou\_real.csv}. Ngưỡng cảnh báo tối ưu hoá F1 hoặc dựa trên chi phí nghiệp vụ; có thể thay đổi theo tuần để kiểm soát Precision/Recall.
+
+\subsection{Mô phỏng thời gian thực và cập nhật twin}
+\textbf{Lưu ý nguồn dữ liệu:} Do chưa tích hợp và thử nghiệm trực tiếp với mô hình dữ liệu Moodle thực tế, hệ thống sử dụng \emph{luồng dữ liệu mô phỏng} để thay thế. Trình mô phỏng tạo ra các sự kiện tương tác ``giả lập'' nhưng bám sát phân bố thống kê rút ra từ \dataset{}, nhằm kiểm thử vòng lặp DT và cơ chế cảnh báo trước khi tích hợp với LMS.
+
+\paragraph{Mô hình dữ liệu và kho lưu vết}
+\begin{itemize}
+    \item \texttt{data/simulations/status.json}: Trạng thái hiện thời của phiên mô phỏng và đồng bộ twin.
+    \begin{itemize}
+        \item \texttt{current\_week} (int): tuần đang mô phỏng.
+        \item \texttt{last\_event\_ts} (ISO-8601): thời điểm sự kiện mới nhất.
+        \item \texttt{active\_students} (list): danh sách sinh viên đang theo dõi.
+        \item \texttt{config} (object): tham số mô phỏng (tốc độ, seed, kịch bản).
+    \end{itemize}
+    \item \texttt{data/simulations/history.csv}: Nhật ký sự kiện theo thời gian.
+    \begin{itemize}
+        \item Các cột chính: \texttt{timestamp}, \texttt{student\_id}, \texttt{course\_id}, \texttt{week}, \texttt{event\_type} (view, quiz\_attempt, forum, resource), \texttt{count}, \texttt{duration\_sec}.
+    \end{itemize}
+    \item \texttt{data/simulations/metrics\_log.csv}: Diễn tiến chỉ số dự báo và cảnh báo.
+    \begin{itemize}
+        \item Các cột chính: \texttt{timestamp}, \texttt{student\_id}, \texttt{week}, \texttt{risk\_score}, \texttt{risk\_label}, \texttt{threshold}, \texttt{precision@t}, \texttt{recall@t} (nếu có nhãn tuần trước).
+    \end{itemize}
+\end{itemize}
+
+\paragraph{Mô hình sự kiện (event model)}
+Sự kiện được tổng hợp theo hạt tuần và loại tương tác, gồm số lần truy cập (\texttt{count}) và/hoặc thời lượng (\texttt{duration}). Trình mô phỏng sinh \texttt{event\_type} theo phân bố phân loại (categorical) và \texttt{count} theo phân bố Poisson/NegBin tuỳ mức độ hoạt động dự kiến, có thể \emph{điều khiển} bằng kịch bản can thiệp (tăng giảm tương tác tuần tới).
+
+\paragraph{Trạng thái Twin (state model)}
+Mỗi sinh viên có \emph{trạng thái tuần tự} gồm: (i) chuỗi đặc trưng tuần đã quan sát, (ii) xác suất rủi ro hiện thời $\hat{y}_{s,t}$, (iii) cờ cảnh báo (nếu vượt ngưỡng), (iv) nhật ký can thiệp (nếu có). Trạng thái được lưu trữ gián tiếp qua \texttt{ou\_pred.csv} (batch) và cập nhật trực tiếp qua \texttt{metrics\_log.csv} khi mô phỏng chạy.
+
+\paragraph{Vòng lặp cập nhật (update loop)}
+\begin{enumerate}
+    \item \textbf{Sinh sự kiện}: \texttt{scripts/simulate\_realtime.py} sinh sự kiện tuần $t$ cho mỗi sinh viên và ghi vào \texttt{history.csv}; cập nhật \texttt{status.json}.
+    \item \textbf{Trích rút đặc trưng}: Tổng hợp sự kiện tuần $t$ vào véc-tơ đặc trưng thời gian cho sinh viên.
+    \item \textbf{Suy luận gia tăng}: \texttt{scripts/update\_twin.py} nạp chuỗi đến tuần $t$, suy luận bằng LSTM để nhận $\hat{y}_{s,t}$.
+    \item \textbf{Cảnh báo và ghi log}: So sánh $\hat{y}_{s,t}$ với \texttt{threshold\_t} (ngưỡng động theo tuần) để gán nhãn rủi ro; ghi \texttt{metrics\_log.csv}.
+    \item \textbf{Đồng bộ dashboard}: Trang \texttt{5\_Live\_Monitor.py} và \texttt{3\_Early\_Warning.py} nạp lại dữ liệu để hiển thị.
+\end{enumerate}
+
+\paragraph{Nhịp độ suy luận và ngưỡng cảnh báo}
+Suy luận diễn ra theo tuần (cadence tuần), phù hợp cấu trúc đặc trưng. Ngưỡng cảnh báo \texttt{threshold\_t} có thể được hiệu chỉnh trước bằng PR-curve trên tập validation, sau đó cố định cho từng tuần để kiểm soát tỷ lệ dương tính giả.
+
+\paragraph{Kịch bản can thiệp và kiểm thử}\label{par:intervention}
+Trình mô phỏng hỗ trợ chỉnh tham số để phản ánh can thiệp: tăng/giảm hệ số cường độ tương tác ở tuần $t+1$, tiêm \texttt{event\_type} cụ thể (ví dụ thêm hoạt động quiz). Việc này cho phép đánh giá \emph{giả lập} tác động can thiệp lên rủi ro $\hat{y}_{s,t+1}$ trước khi áp dụng trong thực tế.
+
+\paragraph{Giới hạn thay thế dữ liệu Moodle} \emph{(trung thực phương pháp)}
+Do chưa có kết nối trực tiếp với cơ sở dữ liệu Moodle (ví dụ bảng \texttt{logstore\_standard\_log}), tập sự kiện hiện \emph{không} phản ánh đầy đủ các loại hành vi (nhiệm vụ có văn bản, chấm điểm theo rubrics, trao đổi diễn đàn dài). Tuy nhiên, phân bố mô phỏng được hiệu chỉnh theo thống kê của \dataset{} để đảm bảo \emph{tương thích} với pipeline đặc trưng và mô hình dự báo.
+
+\paragraph{Hiện thực hoá trong mã nguồn}
+\begin{itemize}
+    \item \texttt{scripts/simulate\_realtime.py}: Sinh sự kiện, cập nhật \texttt{status.json}, ghi \texttt{history.csv}.
+    \item \texttt{scripts/update\_twin.py}: Nạp chuỗi đặc trưng đến tuần hiện thời, chạy suy luận LSTM, tính nhãn rủi ro, ghi \texttt{metrics\_log.csv}.
+    \item \texttt{app/5\_Live\_Monitor.py}, \texttt{app/3\_Early\_Warning.py}: Đọc kho mô phỏng và hiển thị.
+\end{itemize}
+
+\subsection{Dashboard vận hành}
+Ứng dụng tại \texttt{app/} gồm các trang: \texttt{1\_Class\_Overview.py}, \texttt{2\_Student\_Twin.py}, \texttt{3\_Early\_Warning.py}, \texttt{4\_Class\_List.py}, \texttt{5\_Live\_Monitor.py} và tiện ích \texttt{app/utils.py}. Dashboard cung cấp quan sát lớp, twin cá nhân, cảnh báo sớm và giám sát trực tiếp.
+
+\section{Kết quả thử nghiệm}
+\subsection{Thiết lập đánh giá}
+Tách train/test theo khoá học/kỳ học để tránh rò rỉ thời gian. So sánh LSTM với baseline (logistic, random forest, XGBoost) trên đặc trưng cộng dồn. Đánh giá theo tuần bằng AUC-ROC, AUC-PR, F1, Brier score, và phân tích calibration.
+
+\subsection{Kết quả chính}
+LSTM vượt trội ở các tuần giữa–cuối kỳ nhờ khai thác động học chuỗi; baseline tuyến tính cạnh tranh ở tuần đầu khi dữ liệu ít. Calibration được cải thiện sau hiệu chỉnh. Cảnh báo sớm hữu ích nhất trong khung tuần 3–6 tuỳ môn khi còn đủ thời gian can thiệp.
+
+\subsection{Hình và bảng minh hoạ}
+% Gợi ý chèn hình nếu có sẵn: thay thế đường dẫn nếu bạn xuất biểu đồ
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.9\linewidth]{figures/auc_per_week.pdf}
+%     \caption{AUC-ROC theo tuần trên tập kiểm thử}
+%     \label{fig:auc-week}
+% \end{figure}
+
+\begin{table}[H]
+    \centering
+    \caption{Minh hoạ độ đo trung bình trên tập kiểm thử (giả định)}
+    \begin{tabular}{lcccc}
+        \toprule
+        Mô hình & AUC-ROC & AUC-PR & F1 & Brier \\
+        \midrule
+        Logistic Regression & 0.76 & 0.42 & 0.54 & 0.19 \\
+        Random Forest & 0.80 & 0.47 & 0.57 & 0.17 \\
+        XGBoost & 0.82 & 0.50 & 0.59 & 0.16 \\
+        LSTM (đề xuất) & \textbf{0.85} & \textbf{0.56} & \textbf{0.62} & \textbf{0.15} \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:metrics}
+\end{table}
+
+\section{Thảo luận}
+\subsection{Giá trị sư phạm và vận hành}
+DT mang lại ``quan sát số'' cho lớp học và cá nhân, hỗ trợ cố vấn học tập đưa ra can thiệp dựa trên dữ liệu. Dashboard giúp ưu tiên hoá nguồn lực theo rủi ro và theo dõi tác động can thiệp qua mô phỏng trước khi áp dụng thật.
+
+\subsection{Diễn giải và công bằng}
+Kết hợp tóm tắt đặc trưng theo tuần với diễn giải mô hình (ví dụ SHAP theo thời gian) tăng độ tin cậy. Cần giám sát fairness theo nhóm nhân khẩu để tránh thiên lệch, có thể áp dụng reweighting hoặc thresholding theo nhóm.
+
+\subsection{Giới hạn và hướng mở rộng}
+\textbf{Giới hạn:} \dataset{} là dữ liệu lịch sử, mô phỏng thời gian thực chỉ là xấp xỉ; thiếu tín hiệu ngữ nghĩa nâng cao. \textbf{Hướng mở rộng:} tích hợp dữ liệu giàu hơn (văn bản, thời lượng xem), mô hình lai với attention/transformer, thử nghiệm A/B can thiệp, và khuyến nghị hành động trên dashboard.
+
+\section{Đánh giá chi tiết đa chiều}\label{sec:danhgia}
+\subsection{Bao phủ vòng lặp Digital Twin}
+\textbf{Sense}: ETL kết hợp \texttt{studentVle}, \texttt{studentInfo}, \texttt{assessments} để tạo chuỗi tuần (w0..w19) và đặc trưng phụ; mô phỏng cung cấp luồng sự kiện gần thực (\S\,\ref{par:intervention}).\\
+\textbf{Think}: Mô hình LSTM tuần tự, bộ tuner tìm kiến trúc tối ưu theo mục tiêu 0.6·AUC-PR + 0.4·AUC-ROC; baseline tabular (GB) và blend tăng ổn định.\\
+\textbf{Act}: Chính sách cảnh báo theo tuần với ngưỡng động $\theta_t$; dashboard hiển thị cảnh báo, TP/FP và xu hướng.
+
+\subsection{Hiệu năng dự báo} \label{sub:perf}
+\textbf{Độ đo chính}: AUC-PR (ưu tiên dữ liệu mất cân bằng), bổ sung AUC-ROC, F1; calibration bằng Brier. Đánh giá theo tuần t để đo năng lực cảnh báo sớm.\\
+\textbf{Kết quả điển hình}: Baseline LSTM có AUC-PR/AUC-ROC trung bình dưới 0.7; sau tuner (đa mục tiêu) và blend với GB, AUC-PR và AUC-ROC được cải thiện, ổn định hơn qua các tuần trung–cuối kỳ.\\
+\textbf{Ngưỡng cảnh báo}: tối ưu F1 theo tuần hoặc đặt sàn Precision khi nguồn lực can thiệp hạn chế.
+
+\subsection{Calibration và độ tin cậy}
+Platt/Isotonic giúp cải thiện Brier và reliability (độ tin cậy xác suất) trước khi phát cảnh báo. Calibrator được huấn luyện trên tập validation và áp dụng nhất quán.
+
+\subsection{Vận hành thời gian thực}
+Live Monitor đọc \texttt{metrics\_log.csv} (mô phỏng) và/hoặc \texttt{metrics\_eval.csv} (đánh giá); hỗ trợ auto-refresh tuỳ chọn. Đồng bộ với \texttt{simulate\_realtime.py} và \texttt{update\_twin.py} giúp quan sát biến động chỉ số tức thời và cảnh báo.
+
+\subsection{Khả dụng và UX dashboard}
+Các tab: Tổng quan lớp, Twin cá nhân, Cảnh báo sớm, Danh sách lớp và Đánh giá mô hình đáp ứng các vai trò khác nhau (quản trị, giảng viên, cố vấn). Các biểu đồ xu hướng, bảng TP/FP, ngưỡng $\theta_t$ hỗ trợ quyết định.
+
+\subsection{Phạm vi dữ liệu và khả chuyển}
+Phiên bản “All courses” tăng kích thước mẫu bằng cách ghép các học phần; chuẩn hoá tuần theo từng học phần để tránh lệch thời gian. Kiến trúc có thể chuyển sang LMS khác bằng ánh xạ log.
+
+\subsection{Công bằng, quyền riêng tư, đạo đức}
+Theo dõi chênh lệch theo nhóm nhân khẩu (nếu có trường dữ liệu) để tránh thiên lệch; minh bạch hoá chính sách cảnh báo; đảm bảo bảo mật dữ liệu sinh viên và tuân thủ quy định pháp lý.
+
+\subsection{Độ bền và khả năng mở rộng}
+Blend mô hình giúp tăng ổn định khi phân phối thay đổi nhẹ. Có thể mở rộng thêm regularization, dropout hồi tiếp, hoặc stacking meta-learner. Hạ tầng có thể container hoá để triển khai sản xuất.
+
+\subsection{Tái lập và kiểm toán}
+\texttt{EVALUATION.md} mô tả quy trình đánh giá; \texttt{reset\_and\_retrain.py} tái lập pipeline từ đầu. Ghi log đầy đủ (metrics, ngưỡng, TP/FP) cho phép kiểm toán chính sách.
+
+\subsection{Đe doạ giá trị nghiên cứu và hạn chế}
+Sử dụng mô phỏng thay cho log Moodle thực tế có thể chênh khác bản chất dòng sự kiện; thiếu tín hiệu ngữ nghĩa nâng cao; chia tập theo học phần chưa đạt mức “khoá mới hoàn toàn” nếu dùng chung tham số chuẩn hoá.
+
+\subsection{Khuyến nghị}
+Kết hợp tuner đa mục tiêu với blend/stacking; bật calibration trước cảnh báo; dùng ngưỡng động theo tuần có ràng buộc Precision; mở rộng đặc trưng (văn bản, thời lượng) và thử nghiệm A/B can thiệp để đo hiệu quả thực tế.
+
+\section*{Kết luận}
+Bài viết trình bày cơ sở lý thuyết và quy trình triển khai một hệ Digital Twin cho giáo dục dựa trên \dataset{}. Khuôn khổ ETL--LSTM--mô phỏng--dashboard cho phép giám sát động và cảnh báo sớm kết quả học tập, là nền tảng khả chuyển cho các bối cảnh LMS khác.
+
+\section*{Tài liệu tham khảo}
+\begin{thebibliography}{9}
+\bibitem{oulad} Kuzilek, J., Hlosta, M., Zdrahal, Z. (2017). Open University Learning Analytics Dataset.\\ \url{https://analyse.kmi.open.ac.uk/open_dataset}
+\bibitem{lstm} Hochreiter, S., Schmidhuber, J. (1997). Long Short-Term Memory. Neural Computation.
+\bibitem{la-survey} Siemens, G., Baker, R. (2012). Learning analytics and educational data mining: towards communication and collaboration.
+\bibitem{early-warning} Macfadyen, L., Dawson, S. (2010). Mining LMS data to develop an ``early warning system'' for educators.
+\bibitem{dt-survey} Jones, D., et al. (2020). A systematic review of digital twin in education.
+\end{thebibliography}
+
+\end{document}

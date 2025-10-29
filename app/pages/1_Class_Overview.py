@@ -42,6 +42,8 @@ def load_data():
         test = test.merge(real[["id_student", "label"]], on="id_student", how="left")
     if not pred.empty and "predicted_label" in pred.columns:
         test = test.merge(pred[["id_student", "predicted_label", "prob_pass"]], on="id_student", how="left")
+        # Mode "risk": đảo logic prob_risk = 1 - prob_pass
+        test["prob_risk"] = 1.0 - test["prob_pass"].fillna(0.5)
 
     for c in ["tong_click", "so_bai_nop", "diem_tb", "ti_le_hoan_thanh", "so_tuan_hoat_dong"]:
         if c not in test.columns:

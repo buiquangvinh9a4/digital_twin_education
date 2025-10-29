@@ -174,8 +174,11 @@ with colR:
             y_prob = expit(3.5 * (score - 0.5))
 
         y_label = int(y_prob > 0.5)
+        prob_risk = 1.0 - y_prob  # Mode risk
         result_text = "🎓 ĐẠT" if y_label else "⚠️ KHÔNG ĐẠT"
-        st.metric("Kết quả mô phỏng", result_text, f"{y_prob*100:.1f}%")
+        col_res1, col_res2 = st.columns(2)
+        col_res1.metric("Kết quả mô phỏng", result_text, f"{y_prob*100:.1f}% (prob_pass)")
+        col_res2.metric("Xác suất rủi ro", f"{prob_risk*100:.1f}%", "⚠️ CẢNH BÁO" if prob_risk >= 0.06 else "✅ AN TOÀN")
 
         # -----------------------------------------------------------------
         # 📊 TWIN DELTA — So sánh Thực & Ảo
@@ -241,6 +244,7 @@ with colR:
             "tong_click": input_clicks,
             "so_tuan_hoat_dong": input_active_weeks,
             "prob_pass": round(y_prob, 4),
+            "prob_risk": round(1.0 - y_prob, 4),
         }
         with open("data/simulations/history.csv", "a", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=row.keys())

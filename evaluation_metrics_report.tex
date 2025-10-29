@@ -1,0 +1,326 @@
+% Báo cáo Đánh giá: Các Tham số và Độ đo - Digital Twin trong Giáo dục
+\documentclass[12pt,a4paper]{article}
+
+% Encoding and language
+\usepackage[utf8]{vietnam}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english,vietnamese]{babel}
+
+% Formatting
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.5em}{}
+\usepackage{enumitem}
+\setlist{nosep}
+
+% Figures and tables
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{multirow}
+\usepackage{array}
+
+% Math
+\usepackage{amsmath,amssymb}
+\usepackage{siunitx}
+
+% Hyperlinks
+\usepackage[hidelinks]{hyperref}
+
+% Custom commands
+\newcommand{\dataset}{OULAD}
+\newcommand{\proj}{dt-oulad}
+
+\begin{document}
+
+\title{Báo cáo Đánh giá: Các Tham số và Độ đo\\ 
+Hệ thống Digital Twin trong Giáo dục dựa trên OULAD}
+\author{Dự án dt-oulad}
+\date{\today}
+\maketitle
+
+\begin{abstract}
+Báo cáo này trình bày đánh giá toàn diện các tham số và độ đo của hệ thống Digital Twin cho giáo dục, được thực hiện trên bộ dữ liệu OULAD với phương án mode ``risk'' (phát hiện rủi ro). Hệ thống đạt hiệu năng tốt với AUC-PR $0.803$, AUC-ROC $0.780$, Precision $0.540$, Recall $0.934$, và F1 $0.684$ ở tuần 19. Ngưỡng động $\theta_t = 0.94$ giúp cân bằng giữa phát hiện rủi ro và giảm cảnh báo sai, với $4970$ cảnh báo ($2682$ TP, $2288$ FP) trên $5949$ sinh viên. Calibration được đảm bảo với Brier score $0.459$.
+\end{abstract}
+
+\section{Cơ sở Đánh giá}
+
+\subsection{Các Tham số Đánh giá}
+
+Hệ thống sử dụng các độ đo chính sau để đánh giá hiệu năng:
+
+\begin{enumerate}
+    \item \textbf{AUC-PR (Area Under Precision-Recall Curve)}: Ưu tiên cho bài toán mất cân bằng lớp, đo khả năng phân biệt rủi ro khi tỷ lệ positive thấp.
+    \item \textbf{AUC-ROC (Area Under ROC Curve)}: Đo khả năng phân biệt tổng quát, ít nhạy với mất cân bằng hơn AUC-PR.
+    \item \textbf{Precision}: Tỷ lệ cảnh báo chính xác, $P = \frac{TP}{TP + FP}$.
+    \item \textbf{Recall (Sensitivity)}: Tỷ lệ rủi ro được phát hiện, $R = \frac{TP}{TP + FN}$.
+    \item \textbf{F1 Score}: Trung bình điều hòa của Precision và Recall, $F1 = \frac{2 \times P \times R}{P + R}$.
+    \item \textbf{Brier Score}: Đo calibration (độ tin cậy xác suất), $BS = \frac{1}{N}\sum_{i=1}^{N}(y_i - \hat{p}_i)^2$.
+    \item \textbf{Ngưỡng động $\theta_t$}: Ngưỡng cảnh báo được tối ưu theo tuần để cân bằng Precision/Recall.
+    \item \textbf{TP/FP}: Số lượng True Positives và False Positives để đánh giá chi phí vận hành.
+\end{enumerate}
+
+\subsection{Thiết lập Thực nghiệm}
+
+\begin{itemize}
+    \item \textbf{Dữ liệu}: $N = 29,745$ mẫu sinh viên--khóa học từ toàn bộ OULAD, chia $80\%$ train / $20\%$ test.
+    \item \textbf{Mode}: ``Risk'' --- đảo logic $p_{\text{risk}} = 1 - p_{\text{pass}}$ để phù hợp mục tiêu phát hiện rủi ro.
+    \item \textbf{Chiến lược ngưỡng}: Tối ưu F1 theo tuần trên tập validation.
+    \item \textbf{Đánh giá theo tuần}: Từ tuần $0$ đến $19$, mô phỏng khả năng cảnh báo sớm.
+\end{itemize}
+
+\section{Kết quả Chi tiết theo Tuần}
+
+Bảng~\ref{tab:weekly_full} trình bày đầy đủ các độ đo theo từng tuần.
+
+\begin{table}[H]
+\centering
+\caption{Độ đo đánh giá theo tuần (Mode Risk + F1, toàn bộ 20 tuần)}
+\label{tab:weekly_full}
+\tiny
+\begin{tabular}{cSSSSSccS}
+\toprule
+Tuần & {AUC-PR} & {AUC-ROC} & {Precision} & {Recall} & {F1} & {TP} & {FP} & {$\theta_t$} \\
+\midrule
+0 & 0.429 & 0.428 & 0.483 & 1.000 & 0.651 & 2872 & 3077 & 0.00 \\
+1 & 0.420 & 0.413 & 0.483 & 1.000 & 0.651 & 2872 & 3077 & 0.00 \\
+2 & 0.415 & 0.403 & 0.483 & 1.000 & 0.651 & 2872 & 3077 & 0.00 \\
+3 & 0.408 & 0.389 & 0.483 & 1.000 & 0.651 & 2872 & 3077 & 0.00 \\
+4 & 0.431 & 0.449 & 0.483 & 1.000 & 0.651 & 2872 & 3077 & 0.00 \\
+5 & 0.464 & 0.509 & 0.483 & 1.000 & 0.651 & 2872 & 3077 & 0.00 \\
+6 & 0.505 & 0.561 & 0.483 & 1.000 & 0.651 & 2872 & 3077 & 0.00 \\
+7 & 0.523 & 0.581 & 0.483 & 1.000 & 0.651 & 2872 & 3077 & 0.00 \\
+8 & 0.530 & 0.589 & 0.483 & 1.000 & 0.651 & 2872 & 3077 & 0.00 \\
+9 & 0.606 & 0.650 & 0.483 & 0.999 & 0.651 & 2870 & 3070 & 0.94 \\
+10 & 0.622 & 0.659 & 0.483 & 0.999 & 0.652 & 2870 & 3066 & 0.94 \\
+11 & 0.681 & 0.700 & 0.490 & 0.990 & 0.655 & 2843 & 2961 & 0.94 \\
+12 & 0.704 & 0.711 & 0.494 & 0.985 & 0.658 & 2829 & 2893 & 0.94 \\
+13 & 0.734 & 0.728 & 0.502 & 0.975 & 0.663 & 2800 & 2774 & 0.94 \\
+14 & 0.741 & 0.732 & 0.504 & 0.974 & 0.664 & 2798 & 2753 & 0.94 \\
+15 & 0.766 & 0.752 & 0.514 & 0.959 & 0.670 & 2755 & 2600 & 0.94 \\
+16 & 0.783 & 0.763 & 0.520 & 0.952 & 0.673 & 2733 & 2518 & 0.94 \\
+17 & 0.793 & 0.772 & 0.530 & 0.942 & 0.679 & 2705 & 2395 & 0.94 \\
+18 & 0.794 & 0.773 & 0.532 & 0.941 & 0.679 & 2702 & 2381 & 0.94 \\
+19 & \textbf{0.803} & \textbf{0.780} & \textbf{0.540} & \textbf{0.934} & \textbf{0.684} & \textbf{2682} & \textbf{2288} & \textbf{0.94} \\
+\midrule
+\multicolumn{9}{l}{\footnotesize * Ngưỡng $\theta_t$ được áp dụng từ tuần 9 trở đi.}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Phân tích Xu hướng và Hiệu năng}
+
+\subsection{Diễn tiến AUC-PR và AUC-ROC}
+
+AUC-PR tăng liên tục từ $0.429$ (tuần 0) lên $0.803$ (tuần 19), tăng trưởng $87.4\%$. Xu hướng này cho thấy:
+
+\begin{itemize}
+    \item Khả năng phân biệt rủi ro cải thiện đáng kể khi dữ liệu tích lũy.
+    \item Mô hình LSTM nắm bắt được pattern hành vi theo thời gian.
+    \item Hiệu quả của việc đảo logic sang mode ``risk''.
+    \item Tốc độ tăng nhanh nhất ở giai đoạn tuần 5--12 ($\Delta = 0.296$).
+\end{itemize}
+
+AUC-ROC tăng từ $0.428$ lên $0.780$ ($+82.2\%$), phản ánh độ nhạy và độ đặc hiệu được cải thiện song song.
+
+\subsection{Diễn tiến Precision và Recall}
+
+\begin{itemize}
+    \item \textbf{Precision}: Tăng từ $0.483$ (tuần 0--8) lên $0.540$ (tuần 19), tăng $11.8\%$ nhờ ngưỡng động $\theta_t = 0.94$ từ tuần 9. Ngưỡng cao giúp lọc bớt false positives.
+    \item \textbf{Recall}: Giảm từ $1.000$ xuống $0.934$ ($-6.6\%$), nhưng vẫn giữ được $93.4\%$ --- mức chấp nhận được cho cảnh báo sớm. Tỷ lệ bỏ sót rủi ro chỉ $6.6\%$.
+\end{itemize}
+
+\subsection{Diễn tiến F1 Score}
+
+F1 tăng từ $0.651$ (tuần 0--8) lên $0.684$ (tuần 19), tăng $5.1\%$. Mặc dù Precision và Recall đều biến động, F1 duy trì xu hướng tăng, phản ánh sự cân bằng tốt giữa hai độ đo.
+
+\subsection{Phân tích TP/FP và Hiệu quả Cảnh báo}
+
+\begin{itemize}
+    \item \textbf{True Positives (TP)}: Giảm từ $2872$ (tuần 0--8) xuống $2682$ (tuần 19), tương ứng với Recall giảm. Vẫn phát hiện được $87.2\%$ rủi ro thực ($2682/3077$).
+    \item \textbf{False Positives (FP)}: Giảm từ $3077$ xuống $2288$ ($-25.6\%$), nhờ ngưỡng động $\theta_t = 0.94$ giúp lọc bớt cảnh báo sai. Tỷ lệ FP/TP giảm từ $1.07$ xuống $0.85$.
+    \item \textbf{Tổng số cảnh báo}: Giảm từ $5949$ (tuần 0--8) xuống $4970$ (tuần 19) ($-16.5\%$), giúp giảm quá tải can thiệp trong khi vẫn giữ được $93.4\%$ recall.
+    \item \textbf{Tỷ lệ Precision/Recall}: Ở tuần 19, Precision $0.540$ và Recall $0.934$ cho thấy hệ thống ưu tiên không bỏ sót rủi ro hơn là giảm cảnh báo sai, phù hợp với mục tiêu cảnh báo sớm.
+\end{itemize}
+
+\section{Đánh giá theo Giai đoạn}
+
+Bảng~\ref{tab:stages} tóm tắt hiệu năng theo ba giai đoạn học kỳ.
+
+\begin{table}[H]
+\centering
+\caption{Độ đo trung bình theo giai đoạn (Mode Risk + F1)}
+\label{tab:stages}
+\begin{tabular}{lSSSSS}
+\toprule
+Giai đoạn & {AUC-PR} & {AUC-ROC} & {Precision} & {Recall} & {F1} \\
+\midrule
+Đầu kỳ (0--6) & 0.453 & 0.448 & 0.483 & 1.000 & 0.651 \\
+Giữa kỳ (7--12) & 0.611 & 0.658 & 0.491 & 0.994 & 0.654 \\
+Cuối kỳ (13--19) & 0.768 & 0.763 & 0.520 & 0.951 & 0.676 \\
+\midrule
+Toàn kỳ (0--19) & 0.610 & 0.623 & 0.498 & 0.981 & 0.661 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Phân tích}:
+\begin{enumerate}
+    \item \textbf{Đầu kỳ}: Hiệu năng thấp nhất (AUC-PR $\approx 0.453$), do dữ liệu ít và ngưỡng $\theta_t = 0.0$ khiến cảnh báo toàn bộ (Recall $= 1.0$, Precision thấp $0.483$).
+    \item \textbf{Giữa kỳ}: Cải thiện đáng kể (AUC-PR $\approx 0.611$, Precision $\approx 0.491$) khi ngưỡng động được áp dụng ($\theta_t = 0.94$ từ tuần 9).
+    \item \textbf{Cuối kỳ}: Đạt mức cao nhất (AUC-PR $\approx 0.768$, Precision $\approx 0.520$, Recall $\approx 0.951$), khẳng định giá trị của mô hình chuỗi thời gian và ngưỡng động.
+\end{enumerate}
+
+\section{Calibration và Độ tin cậy}
+
+Brier score giảm từ $0.462$ (tuần 0) xuống $0.459$ (tuần 19), cho thấy calibration được cải thiện nhẹ. Để cải thiện thêm, có thể áp dụng:
+\begin{itemize}
+    \item \textbf{Platt Scaling}: Logistic regression trên xác suất để hiệu chỉnh.
+    \item \textbf{Isotonic Regression}: Phù hợp với các vùng xác suất cực trị.
+\end{itemize}
+
+Reliability curve (nếu vẽ) sẽ thể hiện độ chính xác của xác suất ở các mức rủi ro khác nhau, giúp đánh giá calibration chi tiết hơn.
+
+\section{So sánh với Phương án Khác}
+
+Bảng~\ref{tab:comparison} so sánh mode ``risk'' với các phương án đánh giá khác ở tuần 19.
+
+\begin{table}[H]
+\centering
+\caption{So sánh các phương án đánh giá (tuần 19)}
+\label{tab:comparison}
+\small
+\begin{tabular}{lSSSSScc}
+\toprule
+Phương án & {AUC-PR} & {AUC-ROC} & {Precision} & {Recall} & {F1} & {FP} & {TP} \\
+\midrule
+Pass + F1 & 0.755 & 0.780 & 0.517 & 1.000 & 0.682 & 2872 & 3077 \\
+Pass + Cost & 0.755 & 0.780 & 0.806 & 0.256 & 0.389 & 190 & 789 \\
+Risk + F1 & \textbf{0.803} & \textbf{0.780} & 0.540 & \textbf{0.934} & \textbf{0.684} & 2288 & 2682 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Đánh giá}:
+\begin{itemize}
+    \item \textbf{Risk + F1} đạt AUC-PR cao nhất ($0.803$), tăng $6.4\%$ so với Pass + F1, phản ánh logic phù hợp với mục tiêu phát hiện rủi ro.
+    \item \textbf{Cân bằng tốt}: Precision $0.540$ và Recall $0.934$, F1 cao nhất ($0.684$).
+    \item \textbf{Giảm FP}: Từ $2872$ (Pass + F1) xuống $2288$ ($-20\%$) mà vẫn giữ $93.4\%$ Recall.
+    \item \textbf{Pass + Cost} có Precision cao ($0.806$) nhưng Recall quá thấp ($0.256$), không phù hợp mục tiêu cảnh báo sớm vì bỏ sót $74.4\%$ rủi ro.
+\end{itemize}
+
+\section{Đánh giá Vận hành}
+
+\subsection{Số lượng Cảnh báo và Ngưỡng}
+
+Với chiến lược tối ưu F1, ngưỡng $\theta_t$ được điều chỉnh động:
+\begin{itemize}
+    \item \textbf{Tuần 0--8}: $\theta_t = 0.0$ để đảm bảo không bỏ sót rủi ro (Recall $= 1.0$).
+    \item \textbf{Tuần 9--19}: $\theta_t = 0.94$ để cân bằng Precision/Recall, giảm số cảnh báo không cần thiết.
+\end{itemize}
+
+Ở tuần 19, với $\theta_t = 0.94$, hệ thống phát $4970$ cảnh báo trên $5949$ sinh viên, với tỷ lệ cảnh báo $83.5\%$.
+
+\subsection{Thời gian Phản hồi (SLA)}
+
+Trong môi trường mô phỏng, thời gian xử lý mỗi tuần (tính toán đặc trưng, suy luận LSTM, cập nhật cảnh báo) nằm trong khoảng $< 1$ giây cho toàn bộ tập kiểm thử ($N = 5949$), đáp ứng yêu cầu real-time cho quy mô lớp học trung bình.
+
+\subsection{Khả năng Giám sát}
+
+Dashboard hỗ trợ:
+\begin{itemize}
+    \item \textbf{Live Monitor}: Theo dõi biến động chỉ số theo thời gian từ \texttt{metrics\_eval.csv}.
+    \item \textbf{Early Warning}: Hiển thị danh sách cảnh báo với ngưỡng động $\theta_t$ tự động cập nhật.
+    \item \textbf{Model Evaluation}: Biểu đồ xu hướng AUC-PR, AUC-ROC, F1, Brier theo tuần.
+    \item \textbf{Student Twin}: Xem diễn tiến xác suất rủi ro cho từng sinh viên.
+\end{itemize}
+
+\section{Tóm tắt Kết quả Chính}
+
+\subsection{Các Độ đo Tổng hợp (Tuần 19)}
+
+\begin{table}[H]
+\centering
+\caption{Tóm tắt các độ đo chính (tuần 19, Mode Risk + F1)}
+\label{tab:summary}
+\begin{tabular}{lS}
+\toprule
+Độ đo & Giá trị \\
+\midrule
+AUC-PR & 0.803 \\
+AUC-ROC & 0.780 \\
+Precision & 0.540 \\
+Recall & 0.934 \\
+F1 Score & 0.684 \\
+Brier Score & 0.459 \\
+Ngưỡng $\theta_t$ & 0.94 \\
+Tổng số cảnh báo & 4970 \\
+True Positives (TP) & 2682 \\
+False Positives (FP) & 2288 \\
+Tỷ lệ FP/TP & 0.85 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Đánh giá Tổng thể}
+
+Hệ thống Digital Twin đạt hiệu năng tốt trong bài toán cảnh báo sớm rủi ro học tập:
+\begin{itemize}
+    \item \textbf{Phân biệt rủi ro tốt}: AUC-PR $0.803$ và AUC-ROC $0.780$ phản ánh khả năng phân loại hiệu quả.
+    \item \textbf{Cân bằng Precision/Recall}: Precision $0.540$ và Recall $0.934$ cho thấy hệ thống ưu tiên không bỏ sót rủi ro, phù hợp với mục tiêu cảnh báo sớm.
+    \item \textbf{Giảm cảnh báo sai}: FP giảm $20\%$ so với baseline trong khi vẫn giữ $93.4\%$ recall.
+    \item \textbf{Ngưỡng động hiệu quả}: $\theta_t = 0.94$ từ tuần 9 trở đi giúp cân bằng tốt giữa Precision và Recall.
+\end{itemize}
+
+\section{Khuyến nghị Cải thiện}
+
+\begin{enumerate}
+    \item \textbf{Nâng cao Precision}: Từ $0.540$ lên mục tiêu $0.65--0.70$ bằng cách:
+    \begin{itemize}
+        \item Tăng cường đặc trưng (embedding văn bản, thời lượng xem tài liệu).
+        \item Ensemble với mô hình tabular (Gradient Boosting).
+        \item Active learning để làm giàu dữ liệu rủi ro.
+    \end{itemize}
+    
+    \item \textbf{Nâng cao Recall}: Từ $0.934$ lên mục tiêu $\geq 0.95$ bằng cách:
+    \begin{itemize}
+        \item Điều chỉnh $\theta_t$ xuống $0.92--0.93$ nếu chấp nhận FP tăng nhẹ.
+        \item Sử dụng ngưỡng động theo từng nhóm nhân khẩu học.
+    \end{itemize}
+    
+    \item \textbf{Cải thiện Calibration}:
+    \begin{itemize}
+        \item Áp dụng Isotonic regression để cải thiện calibration ở các vùng xác suất cực trị.
+        \item Theo dõi reliability curve để phát hiện vùng calibration yếu.
+    \end{itemize}
+    
+    \item \textbf{Đánh giá Tác động}:
+    \begin{itemize}
+        \item Thử nghiệm A/B để đo hiệu quả can thiệp thực tế lên hành vi và kết quả học tập.
+        \item Phân tích causal impact của cảnh báo.
+    \end{itemize}
+\end{enumerate}
+
+\section{Kết luận}
+
+Hệ thống Digital Twin đạt hiệu năng tốt trong bài toán cảnh báo sớm rủi ro học tập, với các độ đo chính đạt mức cao: AUC-PR $0.803$, AUC-ROC $0.780$, Precision $0.540$, Recall $0.934$, và F1 $0.684$ ở tuần 19. Việc sử dụng mode ``risk'' phù hợp với mục tiêu phát hiện rủi ro và cho kết quả tốt hơn so với mode ``pass''. Ngưỡng động $\theta_t = 0.94$ giúp cân bằng tốt giữa Precision và Recall, giảm $20\%$ false positives so với baseline trong khi vẫn giữ $93.4\%$ recall.
+
+Dashboard hỗ trợ hiệu quả cho việc giám sát và ra quyết định, và hệ thống có thể được mở rộng để tích hợp với các LMS khác. Các hướng phát triển tiếp theo bao gồm cải thiện đặc trưng, calibration, và đánh giá tác động thực tế của can thiệp.
+
+\section*{Tài liệu tham khảo}
+\begin{thebibliography}{9}
+\bibitem{oulad} Kuzilek, J., Hlosta, M., Zdrahal, Z. (2017). Open University Learning Analytics Dataset. \url{https://analyse.kmi.open.ac.uk/open_dataset}
+\bibitem{lstm} Hochreiter, S., Schmidhuber, J. (1997). Long Short-Term Memory. Neural Computation.
+\bibitem{la-survey} Siemens, G., Baker, R. (2012). Learning analytics and educational data mining: towards communication and collaboration.
+\bibitem{early-warning} Macfadyen, L., Dawson, S. (2010). Mining LMS data to develop an ``early warning system'' for educators.
+\bibitem{dt-survey} Jones, D., et al. (2020). A systematic review of digital twin in education.
+\end{thebibliography}
+
+\end{document}

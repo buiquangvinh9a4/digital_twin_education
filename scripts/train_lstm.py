@@ -5,7 +5,7 @@ import pandas as pd
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, average_precision_score, roc_auc_score
 
 PROCESSED = "data/processed"
 MODELS = "models"
@@ -52,14 +52,22 @@ hist = model.fit(
     verbose=1
 )
 
-# Đánh giá nhanh
+"""Đánh giá nhanh với thêm AUC-PR/AUC-ROC"""
 y_prob = model.predict(X_test).ravel()
 y_pred = (y_prob >= 0.5).astype(int)
 
 acc = accuracy_score(y_test, y_pred)
 f1  = f1_score(y_test, y_pred)
+try:
+    auc_pr = average_precision_score(y_test, y_prob)
+except Exception:
+    auc_pr = float('nan')
+try:
+    auc_roc = roc_auc_score(y_test, y_prob)
+except Exception:
+    auc_roc = float('nan')
 
-print(f"Test ACC: {acc:.4f} | F1: {f1:.4f}")
+print(f"Test ACC: {acc:.4f} | F1: {f1:.4f} | AUC-PR: {auc_pr:.4f} | AUC-ROC: {auc_roc:.4f}")
 
 # Lưu model cuối
 model.save(f"{MODELS}/lstm_final.h5")
